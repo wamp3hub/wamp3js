@@ -82,6 +82,17 @@ export function SpawnPeer(ID: string, transport: Transport) {
 
     listen()
 
+    async function send(event: domain.Event) {
+        console.debug('sending event', event)
+        let {promise} = pendingAcceptEvents.create(event.ID)
+        await safeSend(event)
+        await promise
+    }
+
+    async function close() {
+        await transport.close()
+    }
+
     return {
         ID,
         pendingAcceptEvents,
@@ -90,16 +101,7 @@ export function SpawnPeer(ID: string, transport: Transport) {
         pendingCancelEvents,
         pendingReplyEvents,
         pendingNextEvents,
-
-        async send(event: domain.Event) {
-            console.debug('sending event', event)
-            let {promise} = pendingAcceptEvents.create(event.ID)
-            await safeSend(event)
-            await promise
-        },
-
-        async close() {
-            await transport.close()
-        },
+        send,
+        close,
     }
 }

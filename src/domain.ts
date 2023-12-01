@@ -35,7 +35,7 @@ export function NewAcceptEvent(sourceEvent: Event): AcceptEvent {
 }
 
 export type PublishFeatures = {
-    URI: string
+    URI?: string
 }
 
 export type PublishRoute = {
@@ -65,8 +65,8 @@ export function NewPublishEvent<T=any>(
 }
 
 export type CallFeatures = {
-    URI: string
-    timeout: number
+    URI?: string
+    timeout?: number
 }
 
 export type CallRoute = {
@@ -173,9 +173,9 @@ export function NewYieldEvent<T=any>(
 }
 
 export type NextFeatures = {
-    GeneratorID: string
-    YieldID: string
-    Timeout: number
+    generatorID: string
+    yieldID: string
+    timeout: number
 }
 
 export type NextEvent = Event & {
@@ -183,12 +183,12 @@ export type NextEvent = Event & {
 }
 
 export function NewNextEvent(
-    sourceEvent: Event,
+    features: NextFeatures,
 ): NextEvent {
     return {
         ID: NewID(),
         kind: MessageKinds.Next,
-        features: { GeneratorID: sourceEvent.ID, YieldID: sourceEvent.ID, Timeout: 0, },
+        features,
     }
 }
 
@@ -222,7 +222,3 @@ export type RegisterOptions = ResourceOptions
 export type Subscription = Resource<RegisterOptions>
 
 export type Registration = Resource<RegisterOptions>
-
-export type PublishProcedure = (publishEvent: PublishEvent) => Promise<void>
-
-export type CallProcedure = (callEvent: CallEvent) => Promise<any>

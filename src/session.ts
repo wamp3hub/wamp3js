@@ -1,26 +1,49 @@
 import * as domain from '@domain'
+import type {
+    PublishProcedure,
+    CallProcedure,
+    GeneratorProcedure,
+} from '@endpoints'
 import {
     NewPublishEventEntrypoint,
     NewCallEventEntrypoint,
-    NewPieceByPieceEntrypoint
+    NewPieceByPieceEntrypoint,
 } from '@entrypoints'
 import {Peer} from '@peer'
-import isGeneratorFunction from '@shared/isGeneratorFunction'
 
 const SECOND = 1000000000
-const DEFAULT_TIMEOUT = 60 * SECOND
+const DEFAULT_TIMEOUT = 60
+
+export function isCallableFunction(f: any): f is CallProcedure {
+    return (
+        f
+        && f.constructor
+        && (f.constructor.name === 'Function' || f.constructor.name === 'AsyncFunction')
+    )
+}
+
+export function isGeneratorFunction(f: any): f is GeneratorProcedure {
+    return (
+        f
+        && f.constructor
+        && (f.constructor.name === 'GeneratorFunction' || f.constructor.name === 'AsyncGeneratorFunction')
+    )
+}
+
+export type RemoteGenerator<T=any> = AsyncGenerator<domain.YieldEvent<T>>
 
 export function NewRemoteGenerator<T>(
     router: Peer,
     yieldEvent: domain.YieldEvent,
-): AsyncGenerator<T> {
+): RemoteGenerator<T> {
+    let generatorID = yieldEvent.payload.ID
     let response: domain.YieldEvent | domain.ReplyEvent | domain.ErrorEvent = yieldEvent
-
     return {
         [Symbol.asyncIterator]: function () { return this },
 
         async next() {
-            let nextEvent = domain.NewNextEvent(yieldEvent)
+            let nextFeatures = {generatorID, yieldID: response.ID, timeout: DEFAULT_TIMEOUT * SECOND}
+            let nextEvent = domain.NewNextEvent(nextFeatures)
             let pendingReplyEvent = router.pendingReplyEvents.create(nextEvent.ID)
             await router.send(nextEvent)
             response = await pendingReplyEvent.promise
@@ -62,20 +85,32 @@ export function NewSession(router: Peer) {
     router.incomingPublishEvents.observe({next: onEntrypoint, complete: () => {}})
 
     async function publish<I=any>(
-        features: domain.PublishFeatures,
+        URI: string,
         payload: I,
-    ) {
+        features: domain.PublishFeatures = {},
+    ): Promise<void> {
+        features.URI = URI
         let publishEvent = domain.NewPublishEvent(features, payload)
         await router.send(publishEvent)
     }
 
     async function call<O, I=any>(
-        features: domain.CallFeatures,
+        URI: string,
         payload: I,
-    ): Promise<domain.ReplyEvent<O> | AsyncGenerator<O>> {
-        if (!features.timeout) {
-            features.timeout = DEFAULT_TIMEOUT
-        }
+        features?: domain.CallFeatures
+    ): Promise<domain.ReplyEvent<O>>
+    async function call<O, I=any>(
+        URI: string,
+        payload: I,
+        features?: domain.CallFeatures
+    ): Promise<RemoteGenerator<O>>
+    async function call<O, I=any>(
+        URI: string,
+        payload: I,
+        features: domain.CallFeatures = {},
+    ): Promise<domain.ReplyEvent<O> | ReturnType<typeof NewRemoteGenerator>> {
+        features.URI = URI
+        features.timeout = (features.timeout ?? DEFAULT_TIMEOUT) * SECOND
         let callEvent = domain.NewCallEvent(features, payload)
         let pendingReplyEvent = router.pendingReplyEvents.create(callEvent.ID)
         await router.send(callEvent)
@@ -94,9 +129,9 @@ export function NewSession(router: Peer) {
 
     async function unsubscribe(
         subscriptionID: string,
-    ) {
+    ): Promise<void> {
         try {
-            await call({URI: 'wamp.router.unsubscribe'}, subscriptionID)
+            await call('wamp.router.unsubscribe', subscriptionID)
         } finally {
             entrypointMap.delete(subscriptionID)
         }
@@ -104,9 +139,9 @@ export function NewSession(router: Peer) {
 
     async function unregister(
         registrationID: string,
-    ) {
+    ): Promise<void> {
         try {
-            await call({URI: 'wamp.router.unregister'}, registrationID)
+            await call('wamp.router.unregister', registrationID)
         } finally {
             entrypointMap.delete(registrationID)
         }
@@ -115,10 +150,10 @@ export function NewSession(router: Peer) {
     async function subscribe(
         URI: string,
         options: domain.SubscribeOptions,
-        procedure: domain.PublishProcedure,
+        procedure: PublishProcedure,
     ): Promise<domain.Subscription> {
         let newResourcePayload = {URI, options}
-        let replyEvent = await call<domain.Subscription>({URI: 'wamp.router.subscribe'}, newResourcePayload)
+        let replyEvent = await call<domain.Subscription>('wamp.router.subscribe', newResourcePayload)
         let entrypoint = NewPublishEventEntrypoint(router, procedure)
         entrypointMap.set(replyEvent.payload.ID, entrypoint)
         return replyEvent.payload
@@ -127,15 +162,15 @@ export function NewSession(router: Peer) {
     async function register(
         URI: string,
         options: domain.RegisterOptions,
-        procedure: domain.CallProcedure,
+        procedure: CallProcedure | GeneratorProcedure,
     ): Promise<domain.Registration> {
         let newResourcePayload = {URI, options}
-        let replyEvent = await call<domain.Registration>({URI: 'wamp.router.register'}, newResourcePayload)
-        if (isGeneratorFunction(procedure)) {
-            let entrypoint = NewPieceByPieceEntrypoint(router, procedure)
-            entrypointMap.set(replyEvent.payload.ID, entrypoint)
-        } else {
+        let replyEvent = await call<domain.Registration>('wamp.router.register', newResourcePayload)
+        if (isCallableFunction(procedure)) {
             let entrypoint = NewCallEventEntrypoint(router, procedure)
+            entrypointMap.set(replyEvent.payload.ID, entrypoint)
+        } else if (isGeneratorFunction(procedure)) {
+            let entrypoint = NewPieceByPieceEntrypoint(router, procedure)
             entrypointMap.set(replyEvent.payload.ID, entrypoint)
         }
         return replyEvent.payload
@@ -143,7 +178,8 @@ export function NewSession(router: Peer) {
 
     async function leave(
         reason: string
-    ) {
+    ): Promise<void> {
+        console.debug('leaving session', reason)
         await router.close()
     }
 
@@ -160,3 +196,5 @@ export function NewSession(router: Peer) {
         leave,
     }
 }
+
+export type Session = ReturnType<typeof NewSession>

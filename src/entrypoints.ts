@@ -2,14 +2,17 @@ import * as domain from '@domain'
 import {
     NewPublishEventEndpoint,
     NewCallEventEndpoint,
-    NewPieceByPieceEndpoint
+    NewPieceByPieceEndpoint,
+    PublishProcedure,
+    CallProcedure,
+    GeneratorProcedure,
 } from '@endpoints'
 import {Peer} from '@peer'
 
 export function NewPublishEventEntrypoint(
     router: Peer,
-    procedure: domain.PublishProcedure,
-) {
+    procedure: PublishProcedure,
+): (publishEvent: domain.PublishEvent) => Promise<void> {
     let endpoint = NewPublishEventEndpoint(procedure)
     return async function (publishEvent: domain.PublishEvent): Promise<void> {
         await endpoint(publishEvent)
@@ -18,8 +21,8 @@ export function NewPublishEventEntrypoint(
 
 export function NewCallEventEntrypoint(
     router: Peer,
-    procedure: domain.CallProcedure,
-) {
+    procedure: CallProcedure,
+): (callEvent: domain.CallEvent) => Promise<void> {
     let endpoint = NewCallEventEndpoint(procedure)
     return async function (callEvent: domain.CallEvent): Promise<void> {
         let replyEvent = await endpoint(callEvent)
@@ -29,26 +32,34 @@ export function NewCallEventEntrypoint(
 
 export function NewPieceByPieceEntrypoint(
     router: Peer,
-    procedure: domain.CallProcedure,
-) {
+    procedure: GeneratorProcedure,
+): (callEvent: domain.CallEvent) => Promise<void> {
     let endpoint = NewPieceByPieceEndpoint(procedure)
     return async function (callEvent: domain.CallEvent): Promise<void> {
         let pieceByPiece = endpoint(callEvent)
-        let yieldEvent = domain.NewYieldEvent(callEvent, pieceByPiece.ID)
+
         let pendingStopEvent = router.pendingCancelEvents.create(pieceByPiece.ID)
-        await router.send(yieldEvent)
+
+        let yieldEvent = domain.NewYieldEvent(callEvent, {ID: pieceByPiece.ID})
+
         while (pieceByPiece.active) {
             let pendingNextEvent = router.pendingNextEvents.create(yieldEvent.ID)
+
+            await router.send(yieldEvent)
+
             let nextEvent = await Promise.race(
                 [pendingNextEvent.promise, pendingStopEvent.promise]
             )
+
             if (nextEvent.kind == domain.MessageKinds.Next) {
                 let pendingYieldEvent = pieceByPiece.next(nextEvent)
-                let yieldEvent = await Promise.race(
+
+                let mbYieldEvent = await Promise.race(
                     [pendingYieldEvent, pendingStopEvent.promise]
                 )
-                if (yieldEvent.kind == domain.MessageKinds.Yield) {
-                    await router.send(yieldEvent)
+
+                if (mbYieldEvent.kind == domain.MessageKinds.Yield) {
+                    yieldEvent = mbYieldEvent
                     continue
                 }
             }
