@@ -29,7 +29,7 @@ export function NewCallEventEndpoint(
 export interface PieceByPiece {
     ID: string
     active: boolean
-    next(request: domain.CallEvent | domain.NextEvent): Promise<domain.YieldEvent | domain.ReplyEvent>
+    next(request: domain.CallEvent | domain.NextEvent): Promise<domain.YieldEvent | domain.ErrorEvent>
 }
 
 export function NewPieceByPieceEndpoint(
@@ -43,18 +43,18 @@ export function NewPieceByPieceEndpoint(
         return {
             ID: NewID(),
 
-            get active(): boolean {
+            get active() {
                 return !done
             },
 
             async next(
                 request: domain.CallEvent | domain.NextEvent
-            ): Promise<domain.ReplyEvent | domain.YieldEvent> {
+            ) {
                 let result = await generator.next()
 
                 if (result.done) {
                     done = true
-                    return domain.NewReplyEvent(request, result.value)
+                    return domain.NewErrorEvent(request, 'GeneratorExit')
                 } else {
                     return domain.NewYieldEvent(request, result.value)
                 }

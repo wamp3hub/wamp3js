@@ -143,7 +143,7 @@ export type ErrorEvent = Event & {
 }
 
 export function NewErrorEvent(
-    sourceEvent: CallEvent,
+    sourceEvent: Event,
     message: string,
 ): ErrorEvent {
     return {
