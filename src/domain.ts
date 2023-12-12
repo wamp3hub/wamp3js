@@ -3,6 +3,7 @@ import NewID from "@shared/newID"
 export enum MessageKinds {
     Call = 127,
     Cancel = 126,
+    Stop = 126,
     Next = 125,
     Publish = 1,
     Accept = 0,

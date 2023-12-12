@@ -1,11 +1,12 @@
 import {Join} from '@transports/websocket'
-import JSONSerializer from '@serializers/json'
+import NewJSONSerializer from '@serializers/json'
 
 
-async function main() {
-    let serializer = JSONSerializer()
+export async function main() {
+    let serializer = NewJSONSerializer()
+    // @ts-ignore
     window.wamp = await Join('localhost:5173', false, {username: 'test', password: 'secret'}, serializer)
     console.log('join success')
 }
 
-await main()
+// await main()

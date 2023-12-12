@@ -1,6 +1,6 @@
 import * as domain from '@domain'
 
-export default function JSONSerializer() {
+export default function NewJSONSerializer() {
     return {
         encode(data: domain.Event): string {
             return JSON.stringify(data)

@@ -80,8 +80,6 @@ export function SpawnPeer(ID: string, transport: Transport) {
         }
     }
 
-    listen()
-
     async function send(event: domain.Event) {
         console.debug('sending event', event)
         let {promise} = pendingAcceptEvents.create(event.ID)
@@ -92,6 +90,8 @@ export function SpawnPeer(ID: string, transport: Transport) {
     async function close() {
         await transport.close()
     }
+
+    listen()
 
     return {
         ID,

@@ -1,8 +1,8 @@
 import * as domain from '@domain'
 import type {
-    PublishProcedure,
-    CallProcedure,
-    GeneratorProcedure,
+    ProcedureToPublish,
+    ProcedureToCall,
+    ProcedureToGenerate,
 } from '@endpoints'
 import {
     NewPublishEventEntrypoint,
@@ -14,7 +14,7 @@ import {Peer} from '@peer'
 const SECOND = 1000000000
 const DEFAULT_TIMEOUT = 60
 
-export function isCallableFunction(f: any): f is CallProcedure {
+export function isCallableFunction(f: any): f is ProcedureToCall {
     return (
         f
         && f.constructor
@@ -22,7 +22,7 @@ export function isCallableFunction(f: any): f is CallProcedure {
     )
 }
 
-export function isGeneratorFunction(f: any): f is GeneratorProcedure {
+export function isGeneratorFunction(f: any): f is ProcedureToGenerate {
     return (
         f
         && f.constructor
@@ -42,8 +42,13 @@ export function NewRemoteGenerator<T>(
         [Symbol.asyncIterator]: function () { return this },
 
         async next() {
-            let nextFeatures = {generatorID, yieldID: response.ID, timeout: DEFAULT_TIMEOUT * SECOND}
+            let nextFeatures = {
+                generatorID,
+                yieldID: response.ID,
+                timeout: DEFAULT_TIMEOUT * SECOND,
+            }
             let nextEvent = domain.NewNextEvent(nextFeatures)
+
             let pendingReplyEvent = router.pendingReplyEvents.create(nextEvent.ID)
             await router.send(nextEvent)
             response = await pendingReplyEvent.promise
@@ -55,6 +60,7 @@ export function NewRemoteGenerator<T>(
                 }
                 throw response.payload.message
             }
+
             throw 'SomethingWentWrong'
         },
 
@@ -150,7 +156,7 @@ export function NewSession(router: Peer) {
     async function subscribe(
         URI: string,
         options: domain.SubscribeOptions,
-        procedure: PublishProcedure,
+        procedure: ProcedureToPublish,
     ): Promise<domain.Subscription> {
         let newResourcePayload = {URI, options}
         let replyEvent = await call<domain.Subscription>('wamp.router.subscribe', newResourcePayload)
@@ -162,7 +168,7 @@ export function NewSession(router: Peer) {
     async function register(
         URI: string,
         options: domain.RegisterOptions,
-        procedure: CallProcedure | GeneratorProcedure,
+        procedure: ProcedureToCall | ProcedureToGenerate,
     ): Promise<domain.Registration> {
         let newResourcePayload = {URI, options}
         let replyEvent = await call<domain.Registration>('wamp.router.register', newResourcePayload)

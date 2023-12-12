@@ -26,5 +26,5 @@ export default async function HTTP2Interview(
     if (response.status == 200) {
         return await response.json()
     }
-    throw 'Something went wrong'
+    throw 'SomethingWentWrong'
 }
