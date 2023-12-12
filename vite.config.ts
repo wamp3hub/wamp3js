@@ -1,5 +1,7 @@
 import path from 'path'
 import { defineConfig } from 'vite'
+import dts from 'vite-plugin-dts'
+
 
 export default defineConfig({
     resolve: {
@@ -8,6 +10,7 @@ export default defineConfig({
             '@endpoints': path.resolve(__dirname, './src/endpoints'),
             '@entrypoints': path.resolve(__dirname, './src/entrypoints'),
             '@peer': path.resolve(__dirname, './src/peer'),
+            '@peer.test': path.resolve(__dirname, './src/peer.test'),
             '@session': path.resolve(__dirname, './src/session'),
             '@shared': path.resolve(__dirname, './src/shared'),
             '@serializers': path.resolve(__dirname, './src/serializers'),
@@ -16,6 +19,12 @@ export default defineConfig({
     },
     build: {
         outDir: 'build',
+        lib: {
+            entry: path.resolve(__dirname, 'src/index.ts'),
+            name: 'wamp3js',
+            fileName: 'index',
+            // formats: ['es'],
+        }
     },
     server: {
         proxy: {
@@ -29,4 +38,7 @@ export default defineConfig({
             },
         }
     },
+    plugins: [
+        dts()
+    ],
 })

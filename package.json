@@ -1,15 +1,42 @@
 {
   "name": "wamp3js",
   "version": "0.0.0",
+  "description": "This is a simple utility package",
+  "author": "<YOUR_NAME>",
+  "license": "MIT",
+  "homepage": "<YOUR_SITE_URL>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<YOUR_USER_NAME>/my-ts-lib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<YOUR_USER_NAME>/my-ts-lib/issues"
+  },
+  "keywords": ["some", "keywords", "to", "describe", "the", "package"],
   "type": "module",
+  "main": "./build/index.umd.cjs",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./build/index.js",
+      "require": "./build/index.umd.cjs"
+    }
+  },
   "scripts": {
     "local": "vite",
+    "test": "vitest --coverage",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/uuid": "^9.0.7",
+    "@vitest/coverage-v8": "^1.0.4",
     "typescript": "^5.2.2",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.6.4",
+    "vitest": "^1.0.4"
   },
   "dependencies": {
     "uuid": "^9.0.1"
