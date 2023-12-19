@@ -1,4 +1,4 @@
-import {NewPending, Completable} from '@shared/pending'
+import {NewPending, Completable} from '~/shared/pending'
 
 export type Queue<T> = {
     pop(): Promise<T>

@@ -1,4 +1,4 @@
-import * as domain from '@domain'
+import * as domain from '~/domain'
 import {
     NewPublishEventEndpoint,
     NewCallEventEndpoint,
@@ -6,8 +6,8 @@ import {
     ProcedureToPublish,
     ProcedureToCall,
     ProcedureToGenerate,
-} from '@endpoints'
-import {Peer} from '@peer'
+} from '~/endpoints'
+import {Peer} from '~/peer'
 
 export function NewPublishEventEntrypoint(
     router: Peer,

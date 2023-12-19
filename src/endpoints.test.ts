@@ -1,11 +1,11 @@
 import {describe, it, expect} from 'vitest'
-import * as domain from '@domain'
+import * as domain from '~/domain'
 import {
     NewPublishEventEndpoint,
     NewCallEventEndpoint,
     NewPieceByPieceEndpoint,
-} from '@endpoints'
-import NewID from "@shared/newID"
+} from '~/endpoints'
+import NewID from "~/shared/newID"
 
 
 describe('publish event endpoints should be', () => {

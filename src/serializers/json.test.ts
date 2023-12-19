@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest'
-import * as domain from '@domain'
-import NewJSONSerializer from '@serializers/json'
-import NewID from "@shared/newID"
+import * as domain from '~/domain'
+import NewJSONSerializer from '~/serializers/json'
+import NewID from "~/shared/newID"
 
 
 describe('should encode and decode', () => {

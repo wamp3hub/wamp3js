@@ -1,8 +1,11 @@
-import * as domain from '@domain'
-import * as peer from '@peer'
-import { NewSession } from '@session'
-import HTTP2Interview from '@transports/interview/http2'
-import NewQueue from '@shared/queue'
+import type * as domain from '~/domain'
+import type { Session } from '~/session'
+
+import * as peer from '~/peer'
+import { NewSession } from '~/session'
+import {DefaultSerializer} from '~/serializers'
+import HTTP2Interview from '~/transports/interview'
+import NewQueue from '~/shared/queue'
 
 
 export function Connect(
@@ -59,14 +62,24 @@ export function Connect(
     })
 }
 
+export type WebsocketJoinOptions = {
+    address: string
+    credentials: any
+    secure?: boolean
+    serializer?: peer.Serializer
+}
+
 export async function Join(
-    address: string,
-    secure: boolean,
-    credentials: any,
-    serializer: peer.Serializer,
-) {
-    let payload = await HTTP2Interview(address, secure, credentials)
-    let transport = await Connect(address, secure, serializer, payload.ticket)
+    options: WebsocketJoinOptions
+): Promise<Session> {
+    if (!options.secure) {
+        options.secure = false
+    }
+    if (!options.serializer) {
+        options.serializer = DefaultSerializer
+    }
+    let payload = await HTTP2Interview(options.address, options.secure, options.credentials)
+    let transport = await Connect(options.address, options.secure, options.serializer, payload.ticket)
     let __peer = peer.SpawnPeer(payload.yourID, transport)
     let session = NewSession(__peer)
     return session

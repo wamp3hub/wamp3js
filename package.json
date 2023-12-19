@@ -1,18 +1,18 @@
 {
   "name": "wamp3js",
-  "version": "0.0.0",
-  "description": "This is a simple utility package",
-  "author": "<YOUR_NAME>",
+  "version": "0.4.1",
+  "description": "JavaScript library for WAMP3",
+  "author": "WAMP3Hub",
   "license": "MIT",
-  "homepage": "<YOUR_SITE_URL>",
+  "homepage": "https://wamp3hub.github.io/documentation/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<YOUR_USER_NAME>/my-ts-lib.git"
+    "url": "https://github.com/wamp3hub/wamp3js.git"
   },
   "bugs": {
-    "url": "https://github.com/<YOUR_USER_NAME>/my-ts-lib/issues"
+    "url": "https://github.com/wamp3hub/wamp3js/issues"
   },
-  "keywords": ["some", "keywords", "to", "describe", "the", "package"],
+  "keywords": ["wamp3"],
   "type": "module",
   "main": "./build/index.umd.cjs",
   "module": "./build/index.js",
@@ -23,11 +23,15 @@
       "require": "./build/index.umd.cjs"
     }
   },
+  "files": [
+    "build"
+  ],
   "scripts": {
     "local": "vite",
     "test": "vitest --coverage",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "publish:release": "pnpm pack --dry-run && pnpm publish"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",

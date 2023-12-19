@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest'
-import {NewPendingMap} from '@shared/pendingMap'
-import NewID from '@shared/newID'
+import {NewPendingMap} from '~/shared/pendingMap'
+import NewID from '~/shared/newID'
 
 
 describe('pending should be', () => {

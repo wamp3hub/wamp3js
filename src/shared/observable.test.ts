@@ -1,5 +1,5 @@
 import {test, expect} from 'vitest'
-import {NewObservable} from '@shared/observable'
+import {NewObservable} from '~/shared/observable'
 
 
 test('observable happy path', () => {

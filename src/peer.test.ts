@@ -1,8 +1,8 @@
 import {test, expect} from 'vitest'
-import * as domain from '@domain'
-import { Transport, SpawnPeer } from '@peer'
-import NewID from "@shared/newID"
-import NewQueue, {Queue} from '@shared/queue'
+import * as domain from '~/domain'
+import { Transport, SpawnPeer } from '~/peer'
+import NewID from "~/shared/newID"
+import NewQueue, {Queue} from '~/shared/queue'
 
 function NewMockTransport(
     rx: Queue<domain.Event>,

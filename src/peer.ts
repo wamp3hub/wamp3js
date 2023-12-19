@@ -1,6 +1,6 @@
-import * as domain from '@domain'
-import {Observable, NewObservable} from '@shared/observable'
-import {PendingMap, NewPendingMap} from '@shared/pendingMap'
+import * as domain from '~/domain'
+import {Observable, NewObservable} from '~/shared/observable'
+import {PendingMap, NewPendingMap} from '~/shared/pendingMap'
 
 export type Serializer = {
     encode(data: domain.Event): string
@@ -27,7 +27,7 @@ export type Peer = {
     close(): Promise<void>
 }
 
-export function SpawnPeer(ID: string, transport: Transport) {
+export function SpawnPeer(ID: string, transport: Transport): Peer {
     let pendingAcceptEvents = NewPendingMap<domain.AcceptEvent>()
     let incomingPublishEvents = NewObservable<domain.PublishEvent>()
     let incomingCallEvents = NewObservable<domain.CallEvent>()

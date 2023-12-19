@@ -1,11 +1,11 @@
-import * as domain from '@domain'
-import NewID from "@shared/newID"
+import * as domain from '~/domain'
+import NewID from "~/shared/newID"
 
-export type ProcedureToPublish = (publishEvent: domain.PublishEvent) => Promise<void>
+export type ProcedureToPublish<I=any> = (publishEvent: domain.PublishEvent<I>) => Promise<void>
 
-export type ProcedureToCall<T=any> = (callEvent: domain.CallEvent) => Promise<T>
+export type ProcedureToCall<I=any, O=any> = (callEvent: domain.CallEvent<I>) => Promise<O>
 
-export type ProcedureToGenerate<T=any> = (callEvent: domain.CallEvent) => AsyncGenerator<T>
+export type ProcedureToGenerate<I=any, O=any> = (callEvent: domain.CallEvent<I>) => AsyncGenerator<O>
 
 export function NewPublishEventEndpoint(
     procedure: ProcedureToPublish,

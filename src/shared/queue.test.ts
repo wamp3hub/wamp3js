@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest'
-import NewQueue from '@shared/queue'
+import NewQueue from '~/shared/queue'
 
 
 describe('queue', () => {

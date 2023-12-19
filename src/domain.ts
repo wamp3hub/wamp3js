@@ -1,4 +1,4 @@
-import NewID from "@shared/newID"
+import NewID from "~/shared/newID"
 
 export enum MessageKinds {
     Call = 127,

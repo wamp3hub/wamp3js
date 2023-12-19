@@ -1,5 +1,5 @@
 import {test} from 'vitest'
-import NewID from "@shared/newID"
+import NewID from "~/shared/newID"
 
 
 test('should generate unique IDs', () => {

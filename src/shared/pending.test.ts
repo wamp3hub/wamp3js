@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest'
-import {NewPending} from '@shared/pending'
+import {NewPending} from '~/shared/pending'
 
 
 describe('pending should be', () => {

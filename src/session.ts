@@ -1,15 +1,15 @@
-import * as domain from '@domain'
+import * as domain from '~/domain'
 import type {
     ProcedureToPublish,
     ProcedureToCall,
     ProcedureToGenerate,
-} from '@endpoints'
+} from '~/endpoints'
 import {
     NewPublishEventEntrypoint,
     NewCallEventEntrypoint,
     NewPieceByPieceEntrypoint,
-} from '@entrypoints'
-import {Peer} from '@peer'
+} from '~/entrypoints'
+import {Peer} from '~/peer'
 
 const SECOND = 1000000000
 const DEFAULT_TIMEOUT = 60

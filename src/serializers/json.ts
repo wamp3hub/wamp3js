@@ -1,4 +1,4 @@
-import * as domain from '@domain'
+import * as domain from '~/domain'
 
 export default function NewJSONSerializer() {
     return {
