@@ -18,6 +18,6 @@ export function NewPending<T=any>(): Pending<T> {
             }
         )
 
-    // ~/ts-ignore
+    // @ts-ignore
     return {promise, complete, cancel}
 }
