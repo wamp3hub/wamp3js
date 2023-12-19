@@ -30,8 +30,7 @@
     "local": "vite",
     "test": "vitest --coverage",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "publish:release": "pnpm pack --dry-run && pnpm publish"
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",
