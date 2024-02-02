@@ -1,5 +1,6 @@
-import type { Pending } from "./pending"
-import { NewPending } from "./pending"
+import { type Pending, NewPending } from "./pending"
+
+export class PendingNotFound extends Error {}
 
 export type PendingMap<T> = {
     create(ID: string): Pending<T>
@@ -22,7 +23,7 @@ export function NewPendingMap<T>(): PendingMap<T> {
                 pendingMap.delete(ID)
                 pending.complete(value)
             } else {
-                throw 'PendingNotFound'
+                throw new PendingNotFound()
             }
         }
     }

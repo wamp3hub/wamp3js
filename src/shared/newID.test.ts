@@ -7,7 +7,7 @@ test('should generate unique IDs', () => {
     for (let i = 0; i < 1000; i++) {
         let id = NewID()
         if (idSet.has(id)) {
-            throw 'ID generator should return unique value'
+            throw new Error('ID generator should return unique value')
         }
         idSet.add(id)
     }

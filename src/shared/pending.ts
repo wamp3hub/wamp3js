@@ -1,6 +1,6 @@
 export type Completable<T> = (value: T) => void
 
-export type Cancellable = (reason?: any) => void
+export type Cancellable = (reason?: Error) => void
 
 export type Pending<T> = {
     promise: Promise<T>

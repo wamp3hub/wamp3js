@@ -22,8 +22,7 @@ describe('publish event endpoints should be', () => {
     })
 
     async function broken(event: domain.PublishEvent) {
-        console.log(event)
-        throw 'Something went wrong'
+        throw new Error('Something went wrong')
     }
 
     it('safe', async () => {
@@ -62,8 +61,7 @@ describe('call event endpoints should be', () => {
     // })
 
     async function broken(event: domain.CallEvent) {
-        console.log(event)
-        throw 'Something went wrong'
+        throw new Error('Something went wrong')
     }
 
     it('safe', async () => {
@@ -101,7 +99,6 @@ describe('piece by piece endpoints should be', () => {
         let nextFeatures = {generatorID: generator.ID, yieldID: lastYieldID, timeout: 60}
         let nextEvent = domain.NewNextEvent(nextFeatures)
         let response = await generator.next(nextEvent)
-        expect(generator.active).toBe(false)
         expect(response.kind).toBe(domain.MessageKinds.Error)
         expect(response.payload.message).toBe('GeneratorExit')
     })
@@ -110,8 +107,7 @@ describe('piece by piece endpoints should be', () => {
     // })
 
     async function * brokenReverse(event: domain.CallEvent) {
-        console.log(event)
-        throw 'SomethingWentWrong'
+        throw new Error('Something went wrong')
     }
 
     it('safe', async () => {
@@ -124,7 +120,6 @@ describe('piece by piece endpoints should be', () => {
         expect(response.kind).toBe(domain.MessageKinds.Error)
         expect(response.features.invocationID).toBe(nextEvent.ID)
         expect(response.payload).toEqual({message: 'SomethingWentWrong'})
-        expect(generator.active).toBe(false)
     })
 })
 

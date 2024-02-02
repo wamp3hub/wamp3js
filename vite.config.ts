@@ -21,18 +21,6 @@ export default defineConfig({
             fileName: 'index',
         }
     },
-    // server: {
-    //     proxy: {
-    //         '/wamp/v1/interview': {
-    //             target: 'http://0.0.0.0:8800',
-    //             changeOrigin: true,
-    //         },
-    //         '/wamp/v1/websocket': {
-    //             target: 'ws://0.0.0.0:8800',
-    //             ws: true,
-    //         },
-    //     }
-    // },
     plugins: [
         dts()
     ],
