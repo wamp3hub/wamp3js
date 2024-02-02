@@ -4,7 +4,6 @@ import type {
     ProcedureToGenerate,
 } from '~/endpoints'
 import * as domain from '~/domain'
-import * as annotation from '~/annotation'
 import {
     NewPublishEventEntrypoint,
     NewCallEventEntrypoint,
@@ -127,7 +126,6 @@ export function NewSession(router: peer.Peer) {
         unsubscribe,
         unregister,
         leave,
-        annotatePublication,
     }
 
     async function publish<I=any>(
@@ -252,17 +250,6 @@ export function NewSession(router: peer.Peer) {
     ): Promise<void> {
         console.debug('leaving session', reason)
         await router.close()
-    }
-
-    async function annotatePublication(
-        URI: string,
-        payloadSchema: annotation.Schema,
-        description: string,
-    ): Promise<void> {
-        if (invalidURI(URI)) {
-            throw new Error('InvalidURI')
-        }
-        await annotation.annotatePublication(instance, URI, payloadSchema, description)
     }
 
     return instance
