@@ -35,14 +35,14 @@ export async function makeReconnectable(
             await pause()
         }
 
-        let sleepDuration = strategy.next()
-        if (sleepDuration > 0) {
-            try {
+        try {
+            let sleepDuration = strategy.next()
+            if (sleepDuration > 0) {
                 console.debug(`waiting ${sleepDuration} seconds to reconnect`)
                 await sleep(sleepDuration * 1000)
-            } catch {
-                throw new peer.ConnectionClosed()
             }
+        } catch {
+            throw new peer.ConnectionClosed()
         }
 
         try {
