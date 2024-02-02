@@ -12,11 +12,5 @@ describe('pending should be', () => {
     })
 
     it('cancellable', async () => {
-        // let expectedError = 'Test'
-        // let {promise, cancel} = NewPending()
-        // setTimeout(() => cancel(expectedError), 333)
-        // expect(async () => {
-        //     await promise
-        // }).toThrowError()
     })
 })

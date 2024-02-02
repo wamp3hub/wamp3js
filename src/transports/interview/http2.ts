@@ -1,3 +1,5 @@
+export class InterviewError extends Error {}
+
 type SuccessPayload = {
     routerID: string
     ticket: string
@@ -26,5 +28,6 @@ export default async function HTTP2Interview(
     if (response.status == 200) {
         return await response.json()
     }
-    throw 'SomethingWentWrong'
+    let responseText = await response.text()
+    throw new InterviewError(responseText)
 }

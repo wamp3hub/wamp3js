@@ -1,5 +1,22 @@
 import NewID from "~/shared/newID"
 
+export class SomethingWentWrong extends Error {
+    constructor (message: any | undefined = undefined) {
+        super(message)
+        this.name = this.constructor.name
+    }
+}
+
+export class ProtocolError extends SomethingWentWrong {}
+
+export class InvalidPayload extends SomethingWentWrong {}
+
+export class GeneratorExit extends SomethingWentWrong {}
+
+export class GeneratorStop extends SomethingWentWrong {}
+
+export class ApplicationError extends SomethingWentWrong {}
+
 export enum MessageKinds {
     Call = 127,
     Cancel = 126,
@@ -12,19 +29,18 @@ export enum MessageKinds {
     Reply = -127,
 }
 
-export type Event = {
+export type Event<T=any> = {
     ID: string
     kind: MessageKinds
-    features: any
+    features: T
 }
 
 export type AcceptFeatures = {
     sourceID: string
 }
 
-export type AcceptEvent = Event & {
+export type AcceptEvent = Event<AcceptFeatures> & {
     kind: MessageKinds.Accept
-    features: AcceptFeatures
 }
 
 export function NewAcceptEvent(sourceEvent: Event): AcceptEvent {
@@ -46,9 +62,8 @@ export type PublishRoute = {
     visitedRouters: string[]
 }
 
-export type PublishEvent<T=any> = Event & {
+export type PublishEvent<T=any> = Event<PublishFeatures> & {
     kind: MessageKinds.Publish
-    features: PublishFeatures
     payload: T
     route?: PublishRoute
 }
@@ -77,9 +92,8 @@ export type CallRoute = {
     visitedRouters: string[]
 }
 
-export type CallEvent<T=any> = Event & {
+export type CallEvent<T=any> = Event<CallFeatures> & {
     kind: MessageKinds.Call
-    features: CallFeatures
     payload: T
     route?: CallRoute
 }
@@ -100,9 +114,8 @@ export type ReplyFeatures = {
     invocationID: string
 }
 
-export type CancelEvent = Event & {
+export type CancelEvent = Event<ReplyFeatures> & {
     kind: MessageKinds.Cancel
-    features: ReplyFeatures
 }
 
 export function NewCancelEvent(
@@ -115,9 +128,8 @@ export function NewCancelEvent(
     }
 }
 
-export type ReplyEvent<T=any> = Event & {
+export type ReplyEvent<T=any> = Event<ReplyFeatures> & {
     kind: MessageKinds.Reply
-    features: ReplyFeatures
     payload: T
 }
 
@@ -134,30 +146,29 @@ export function NewReplyEvent<T=any>(
 }
 
 export type ErrorEventPayload = {
-    message: string
+    name: string
+    message: any
 }
 
-export type ErrorEvent = Event & {
+export type ErrorEvent = Event<ReplyFeatures> & {
     kind: MessageKinds.Error
-    features: ReplyFeatures
     payload: ErrorEventPayload
 }
 
 export function NewErrorEvent(
     sourceEvent: Event,
-    message: string,
+    e: Error, 
 ): ErrorEvent {
     return {
         ID: NewID(),
         kind: MessageKinds.Error,
         features: { invocationID: sourceEvent.ID, },
-        payload: { message, },
+        payload: { name: e.name, message: e.message, },
     }
 }
 
-export type YieldEvent<T=any> = Event & {
+export type YieldEvent<T=any> = Event<ReplyFeatures> & {
     kind: MessageKinds.Yield
-    features: ReplyFeatures
     payload: T
 }
 
@@ -179,9 +190,7 @@ export type NextFeatures = {
     timeout: number
 }
 
-export type NextEvent = Event & {
-    features: NextFeatures
-}
+export type NextEvent = Event<NextFeatures>
 
 export function NewNextEvent(
     features: NextFeatures,
@@ -213,7 +222,7 @@ type Resource<T> = {
 }
 
 type ResourceOptions = {
-    route: string[]
+    route?: string[]
 }
 
 export type SubscribeOptions = ResourceOptions
