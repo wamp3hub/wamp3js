@@ -1,5 +1,5 @@
-type NextFunction<T> = (value: T) => void
-type CompleteFunction = () => void
+export type NextFunction<T> = (value: T) => void
+export type CompleteFunction = () => void
 
 export type Observer<T> = {
     next: NextFunction<T>

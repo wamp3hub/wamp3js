@@ -1,5 +1,9 @@
 import {test, expect} from 'vitest'
-import {NewObservable} from '~/shared/observable'
+import {
+    type NextFunction,
+    type CompleteFunction,
+    NewObservable
+} from '~/shared/observable'
 
 
 test('observable happy path', () => {
@@ -7,25 +11,19 @@ test('observable happy path', () => {
 
     let expectedPayload = 'test'
 
-    function newObserver<T=any>() {
-        let __done = false
-        return {
-            get done(): boolean {
-                return __done
-            },
-
-            next: (v: T) => {
-                expect(v).toBe(expectedPayload)
-            },
-
-            complete: () => {
-                __done = true
-            },
+    function newObserver<T=any>(): [NextFunction<T>, CompleteFunction] {
+        function next(v: T){
+            expect(v).toBe(expectedPayload)
         }
+
+        function complete(){
+        }
+
+        return [next, complete]
     }
 
-    observe(newObserver())
-    observe(newObserver())
+    observe(...newObserver())
+    observe(...newObserver())
 
     next(expectedPayload)
     complete()
