@@ -1,33 +1,41 @@
-import {NewPending, Completable} from '~/shared/pending'
+import {Pending, NewPending} from '~/shared/pending'
 
-export type Queue<T> = {
-    pop(): Promise<T>
-    put(item: T): void
-}
-
-export default function NewQueue<T>(): Queue<T> {
-    let pendings: Completable<T>[] = []
-    let items: T[] = []
+export function NewQueue<T>() {
+    let pendings: Pending<T>[] = []
+    let items: (T | Error)[] = []
 
     return {
-        async pop(): Promise<T> {
-            if (items.length === 0) {
-                let {promise, complete} = NewPending<T>()
-                pendings.push(complete)
-                return await promise
-            } else {
-                let item = items.shift()!
-                return item
-            }
+        get length(): number {
+            return items.length - pendings.length
         },
 
-        put(item: T): void {
+        pop(): Promise<T> {
+            if (items.length > 0) {
+                let i = items.shift() as T | Error
+                if (i instanceof Error) {
+                    return Promise.reject(i)
+                }
+                return Promise.resolve(i)
+            }
+
+            let p = NewPending<T>()
+            pendings.push(p)
+            return p.promise
+        },
+
+        put(i: T | Error): void {
             if (pendings.length > 0) {
-                let completePending = pendings.shift()!
-                completePending(item)
+                let p = pendings.shift() as Pending<T>
+                if (i instanceof Error) {
+                    p.cancel(i)
+                } else {
+                    p.complete(i)
+                }
             } else {
-                items.push(item)
+                items.push(i)
             }
         },
     }
 }
+
+export type Queue<T> = ReturnType<typeof NewQueue<T>>

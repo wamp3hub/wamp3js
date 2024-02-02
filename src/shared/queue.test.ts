@@ -1,6 +1,5 @@
 import {describe, it, expect} from 'vitest'
-import NewQueue from '~/shared/queue'
-
+import {NewQueue} from '~/shared/queue'
 
 describe('queue', () => {
     let queue = NewQueue()
@@ -8,7 +7,7 @@ describe('queue', () => {
     let expectedItem = 'WAMP'
 
     it('await until push', async () => {
-        setTimeout(() => queue.put(expectedItem), 333)
+        setTimeout(() => queue.put(expectedItem), 111)
         let actualItem = await queue.pop()
         expect(actualItem).toBe(expectedItem)
     })

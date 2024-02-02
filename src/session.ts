@@ -11,7 +11,6 @@ import {
 } from '~/entrypoints'
 import {Peer} from '~/peer'
 
-const SECOND = 1000000000
 const DEFAULT_TIMEOUT = 60
 
 export function isCallableFunction(f: any): f is ProcedureToCall {
@@ -45,7 +44,7 @@ export function NewRemoteGenerator<T>(
             let nextFeatures = {
                 generatorID,
                 yieldID: response.ID,
-                timeout: DEFAULT_TIMEOUT * SECOND,
+                timeout: DEFAULT_TIMEOUT,
             }
             let nextEvent = domain.NewNextEvent(nextFeatures)
 
@@ -76,6 +75,7 @@ export function NewRemoteGenerator<T>(
 
 export function NewSession(router: Peer) {
     let entrypointMap = new Map()
+    let restoreMap = new Map()
 
     function onEntrypoint(event: domain.CallEvent | domain.PublishEvent) {
         let entrypoint = entrypointMap.get(event.route?.endpointID)
@@ -86,9 +86,22 @@ export function NewSession(router: Peer) {
         }
     }
 
-    router.incomingCallEvents.observe({next: onEntrypoint, complete: () => {}})
+    router.incomingCallEvents.observe(onEntrypoint)
+    router.incomingPublishEvents.observe(onEntrypoint)
 
-    router.incomingPublishEvents.observe({next: onEntrypoint, complete: () => {}})
+    async function rejoin() {
+        for (let restore of restoreMap.values()) {
+            console.debug('restoring...')
+            restore()
+        }
+    }
+
+    async function onLeave() {
+        entrypointMap.clear()
+        restoreMap.clear()
+    }
+
+    router.rejoinEvents.observe(rejoin, onLeave)
 
     async function publish<I=any>(
         URI: string,
@@ -116,7 +129,7 @@ export function NewSession(router: Peer) {
         features: domain.CallFeatures = {},
     ): Promise<domain.ReplyEvent<O> | ReturnType<typeof NewRemoteGenerator>> {
         features.URI = URI
-        features.timeout = (features.timeout ?? DEFAULT_TIMEOUT) * SECOND
+        features.timeout = (features.timeout ?? DEFAULT_TIMEOUT)
         let callEvent = domain.NewCallEvent(features, payload)
         let pendingReplyEvent = router.pendingReplyEvents.create(callEvent.ID)
         await router.send(callEvent)
@@ -139,6 +152,7 @@ export function NewSession(router: Peer) {
         try {
             await call('wamp.router.unsubscribe', subscriptionID)
         } finally {
+            restoreMap.delete(subscriptionID)
             entrypointMap.delete(subscriptionID)
         }
     }
@@ -149,6 +163,7 @@ export function NewSession(router: Peer) {
         try {
             await call('wamp.router.unregister', registrationID)
         } finally {
+            restoreMap.delete(registrationID)
             entrypointMap.delete(registrationID)
         }
     }
@@ -159,10 +174,15 @@ export function NewSession(router: Peer) {
         procedure: ProcedureToPublish,
     ): Promise<domain.Subscription> {
         let newResourcePayload = {URI, options}
-        let replyEvent = await call<domain.Subscription>('wamp.router.subscribe', newResourcePayload)
+        let {payload: subscription} = await call<domain.Subscription>('wamp.router.subscribe', newResourcePayload)
         let entrypoint = NewPublishEventEntrypoint(router, procedure)
-        entrypointMap.set(replyEvent.payload.ID, entrypoint)
-        return replyEvent.payload
+        entrypointMap.set(subscription.ID, entrypoint)
+        async function restore() {
+            entrypointMap.delete(subscription.ID)
+            subscribe(URI, options, procedure)
+        }
+        restoreMap.set(subscription.ID, restore)
+        return subscription
     }
 
     async function register(
@@ -171,15 +191,20 @@ export function NewSession(router: Peer) {
         procedure: ProcedureToCall | ProcedureToGenerate,
     ): Promise<domain.Registration> {
         let newResourcePayload = {URI, options}
-        let replyEvent = await call<domain.Registration>('wamp.router.register', newResourcePayload)
+        let {payload: registration} = await call<domain.Registration>('wamp.router.register', newResourcePayload)
         if (isCallableFunction(procedure)) {
             let entrypoint = NewCallEventEntrypoint(router, procedure)
-            entrypointMap.set(replyEvent.payload.ID, entrypoint)
+            entrypointMap.set(registration.ID, entrypoint)
         } else if (isGeneratorFunction(procedure)) {
             let entrypoint = NewPieceByPieceEntrypoint(router, procedure)
-            entrypointMap.set(replyEvent.payload.ID, entrypoint)
+            entrypointMap.set(registration.ID, entrypoint)
         }
-        return replyEvent.payload
+        async function restore() {
+            entrypointMap.delete(registration.ID)
+            register(URI, options, procedure)
+        }
+        restoreMap.set(registration.ID, restore)
+        return registration
     }
 
     async function leave(
