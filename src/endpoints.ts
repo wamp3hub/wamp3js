@@ -1,5 +1,5 @@
 import * as domain from '~/domain'
-import NewID from "~/shared/newID"
+import NewID from '~/shared/newID'
 
 export type ProcedureToPublish<I=any> = (publishEvent: domain.PublishEvent<I>) => Promise<void>
 
@@ -13,8 +13,8 @@ export function NewPublishEventEndpoint(
     return async function (publishEvent: domain.PublishEvent): Promise<void> {
         try {
             await procedure(publishEvent)
-        } catch {
-            console.error('during execute publish event endpoint')
+        } catch (error) {
+            console.error('during execute publish event endpoint', { publishEvent, error })
         }
     }
 }
@@ -24,19 +24,17 @@ export function NewCallEventEndpoint(
 ) {
     return async function (callEvent: domain.CallEvent): Promise<domain.ReplyEvent | domain.ErrorEvent> {
         try {
-            let payload = await procedure(callEvent)
-            return domain.NewReplyEvent(callEvent, payload)
-        } catch {
-            console.error('during execute call event endpoint')
-            return domain.NewErrorEvent(callEvent, 'SomethingWentWrong')
+            let replyPayload = await procedure(callEvent)
+            return domain.NewReplyEvent(callEvent, replyPayload)
+        } catch (error: any) {
+            let isCustomError = error instanceof domain.ApplicationError
+            if (!isCustomError) {
+                console.error('during execute call event endpoint', { callEvent, error })
+                error = new domain.ApplicationError()
+            }
+            return domain.NewErrorEvent(callEvent, error)
         }
     }
-}
-
-export interface PieceByPiece {
-    ID: string
-    active: boolean
-    next(request: domain.CallEvent | domain.NextEvent): Promise<domain.YieldEvent | domain.ErrorEvent>
 }
 
 export function NewPieceByPieceEndpoint(
@@ -44,36 +42,52 @@ export function NewPieceByPieceEndpoint(
 ) {
     function NewPieceByPiece(
         generator: AsyncGenerator,
-    ): PieceByPiece {
+    ) {
         let done = false
 
-        return {
+        let instance = {
             ID: NewID(),
 
-            get active() {
+            get active(): boolean {
                 return !done
             },
 
             async next(
-                request: domain.CallEvent | domain.NextEvent
-            ) {
+                request: domain.CallEvent | domain.NextEvent,
+            ): Promise<domain.YieldEvent | domain.ErrorEvent> {
                 try {
                     let result = await generator.next()
 
                     if (result.done) {
                         done = true
-                        return domain.NewErrorEvent(request, 'GeneratorExit')
-                    } else {
-                        return domain.NewYieldEvent(request, result.value)
+                        let error = new domain.GeneratorExit()
+                        return domain.NewErrorEvent(request, error)
                     }
-                } catch {
+
+                    return domain.NewYieldEvent(request, result.value)
+                } catch (error: any) {
                     done = true
-                    console.error('during execute piece by piece endpoint')
-                    return domain.NewErrorEvent(request, 'SomethingWentWrong')
+
+                    let isCustomError = error instanceof domain.ApplicationError
+                    if (!isCustomError) {
+                        console.error('during execute piece by piece endpoint', { request, error })
+                        error = new domain.ApplicationError()
+                    }
+
+                    return domain.NewErrorEvent(request, error)
                 }
             },
+
+            stop(): void {
+                done = true
+                generator.throw(new domain.GeneratorStop())
+            },
         }
+
+        return instance
     }
+
+    type PieceByPiece = ReturnType<typeof NewPieceByPiece>
 
     return function (callEvent: domain.CallEvent): PieceByPiece {
         let generator = procedure(callEvent)
