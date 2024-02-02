@@ -1,3 +1,3 @@
-import { Join as WebsocketJoin } from '~/transports/websocket'
+import { WebsocketJoin } from '~/transports/websocket'
 
 export default { WebsocketJoin }

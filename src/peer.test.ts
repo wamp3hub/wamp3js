@@ -2,7 +2,7 @@ import {test, expect} from 'vitest'
 import * as domain from '~/domain'
 import { Transport, SpawnPeer } from '~/peer'
 import NewID from "~/shared/newID"
-import NewQueue, {Queue} from '~/shared/queue'
+import {NewQueue, Queue} from '~/shared/queue'
 
 function NewMockTransport(
     rx: Queue<domain.Event>,
@@ -39,20 +39,18 @@ test('happy path', async () => {
     let expectedNextEvent = domain.NewNextEvent(nextFeatures)
     let expectedYieldEvent = domain.NewYieldEvent(expectedNextEvent, 'TEST')
 
-    rPeer.incomingPublishEvents.observe({
-        next: publishEvent => {
+    rPeer.incomingPublishEvents.observe(
+        publishEvent => {
             expect(publishEvent).toEqual(expectedPublishEvent)
-        },
-        complete: () => {},
-    })
+        }
+    )
     await lPeer.send(expectedPublishEvent)
 
-    rPeer.incomingCallEvents.observe({
-        next: callEvent => {
+    rPeer.incomingCallEvents.observe(
+        callEvent => {
             expect(callEvent).toEqual(expectedCallEvent)
-        },
-        complete: () => {},
-    })
+        }
+    )
     await lPeer.send(expectedCallEvent)
 
     let pendingReplyEvent = rPeer.pendingReplyEvents.create(expectedCallEvent.ID)

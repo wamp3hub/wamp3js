@@ -1,86 +1,112 @@
-import type * as domain from '~/domain'
-import type { Session } from '~/session'
-
+import * as domain from '~/domain'
 import * as peer from '~/peer'
-import { NewSession } from '~/session'
+import {Session, NewSession} from '~/session'
 import {DefaultSerializer} from '~/serializers'
+import {NewQueue} from '~/shared/queue'
+import {RetryStrategy, DefaultRetryStrategy} from '~/shared/retryStrategy'
 import HTTP2Interview from '~/transports/interview'
-import NewQueue from '~/shared/queue'
+import * as reconnectable from '~/transports/reconnectable'
 
-
-export function Connect(
+async function connect(
     address: string,
-    secure: boolean,
-    serializer: peer.Serializer,
-    ticket: string,
+    serializer: peer.Serializer = DefaultSerializer,
 ): Promise<peer.Transport> {
     return new Promise((resolve, reject) => {
-        let protocol = 'ws'
-        if (secure) {
-            protocol = 'wss'
-        }
-        let url = `${protocol}://${address}/wamp/v1/websocket?ticket=${ticket}`
-    
-        console.debug(`trying to websocket connect ${url}`)
-    
+        console.debug('ws connecting...')
+
+        let initialized = false
         let q = NewQueue<string>()
+        let connection = new WebSocket(address)
 
-        let connection = new WebSocket(url)
+        let self = {
+            get open(): boolean {
+                return connection.readyState === WebSocket.OPEN
+            },
 
-        async function read(): Promise<domain.Event> {
-            let message = await q.pop()
-            let event = serializer.decode(message)
-            return event
+            async read(): Promise<domain.Event> {
+                let v = await q.pop()
+                let event = serializer.decode(v)
+                return event
+            },
+
+            async write(event: domain.Event) {
+                let message = serializer.encode(event)
+                connection.send(message)
+            },
+
+            async close() {
+                connection.close()
+            },
         }
 
-        async function write(event: domain.Event) {
-            let message = serializer.encode(event)
-            connection.send(message)
+        connection.onopen = openEvent => {
+            console.debug('ws connection open', openEvent)
+            initialized = true
+            resolve(self)
         }
 
-        async function close() {
-            connection.close()
-        }
-
-        connection.onopen = event => {
-            console.debug('ws connection open', event)
-            resolve({read, write, close,})
-        }
-
-        connection.onclose = event => {
-            console.debug('ws connection close', event)
-            reject(event)
+        connection.onclose = closeEvent => {
+            console.warn('ws connection close', closeEvent)
+            if (initialized) {
+                let e = new (closeEvent.wasClean ? peer.ConnectionClosed : reconnectable.BadConnection)()
+                q.put(e)
+            } else {
+                reject(closeEvent)
+            }
         }
 
         connection.onmessage = async (message) => {
-            await q.put(message.data)
+            q.put(message.data)
         }
 
-        connection.onerror = event => {
-            console.error(event)
+        connection.onerror = errorEvent => {
+            console.error('ws error', errorEvent)
         }
     })
 }
 
-export type WebsocketJoinOptions = {
-    address: string
-    credentials: any
-    secure?: boolean
-    serializer?: peer.Serializer
+export async function WebsocketConnect(
+    address: string,
+    serializer: peer.Serializer = DefaultSerializer,
+    reconnectingStrategy: RetryStrategy = DefaultRetryStrategy,
+): Promise<peer.Transport> {
+    return await reconnectable.makeReconnectable(
+        () => connect(address, serializer),
+        reconnectingStrategy
+    )
 }
 
-export async function Join(
-    options: WebsocketJoinOptions
+export type JoinOptions = {
+    credentials?: any
+    secure?: boolean
+    serializer?: peer.Serializer,
+    reconnectingStrategy?: RetryStrategy,
+}
+
+export async function WebsocketJoin(
+    address: string,
+    options: JoinOptions = {},
 ): Promise<Session> {
-    if (!options.secure) {
+    if (options.secure === undefined) {
         options.secure = false
     }
-    if (!options.serializer) {
+    if (options.serializer === undefined) {
         options.serializer = DefaultSerializer
     }
-    let payload = await HTTP2Interview(options.address, options.secure, options.credentials)
-    let transport = await Connect(options.address, options.secure, options.serializer, payload.ticket)
-    let __peer = peer.SpawnPeer(payload.yourID, transport)
+    if (options.reconnectingStrategy === undefined) {
+        options.reconnectingStrategy = DefaultRetryStrategy
+    }
+
+    let {yourID, ticket} = await HTTP2Interview(address, options.secure, options.credentials)
+
+    let protocol = 'ws'
+    if (options.secure) {
+        protocol = 'wss'
+    }
+    let url = `${protocol}://${address}/wamp/v1/websocket?ticket=${ticket}`
+    let transport = await WebsocketConnect(url, options.serializer)
+
+    let __peer = peer.SpawnPeer(yourID, transport)
     let session = NewSession(__peer)
     return session
 }
