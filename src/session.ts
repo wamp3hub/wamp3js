@@ -22,8 +22,10 @@ function resolveErrorEvent(v: domain.ErrorEvent): domain.SomethingWentWrong {
             return new domain.GeneratorExit(v.payload.message)
         case domain.ProtocolError.name:
             return new domain.ProtocolError(v.payload.message)
-        default:
+        case domain.ApplicationError.name:
             return new domain.ApplicationError(v.payload.message)
+        default:
+            return new domain.SomethingWentWrong(v.payload.message)
     }
 }
 

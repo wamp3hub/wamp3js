@@ -76,7 +76,7 @@ export async function WebsocketConnect(
     )
 }
 
-export type JoinOptions = {
+export type WebsocketJoinOptions = {
     credentials?: any
     secure?: boolean
     serializer?: peer.Serializer,
@@ -85,7 +85,7 @@ export type JoinOptions = {
 
 export async function WebsocketJoin(
     address: string,
-    options: JoinOptions = {},
+    options: WebsocketJoinOptions = {},
 ): Promise<Session> {
     if (options.secure === undefined) {
         options.secure = false

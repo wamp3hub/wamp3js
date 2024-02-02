@@ -1,3 +1,13 @@
-import { WebsocketJoin } from '~/transports/websocket'
+import {
+    type WebsocketJoinOptions,
+    WebsocketJoin,
+} from '~/transports/websocket'
 
-export default { WebsocketJoin }
+export type {
+    WebsocketJoinOptions,
+}
+
+export default {
+    WebsocketJoin,
+    Join: WebsocketJoin,
+}
